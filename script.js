@@ -63,11 +63,10 @@ class KnightTour {
     if (depth === this.chessboard.size * this.chessboard.size) {
       if (completeTour) {
         // Check if the starting point is a valid move from the current position
-        const validMoves = this.getValidMovesWithDegrees(x, y, true);
-        for (const move of validMoves) {
+        for (const move of this.getValidMovesWithDegrees(x, y, true)) {
           if (
-            move.move[0] === this.startPoint[0] &&
-            move.move[1] === this.startPoint[1]
+            move[0] === this.startPoint[0] &&
+            move[1] === this.startPoint[1]
           ) {
             console.log("we are done at ", depth);
             return true;
@@ -79,18 +78,16 @@ class KnightTour {
       }
     }
 
-    let validMovesWithDegrees = this.getValidMovesWithDegrees(x, y);
-    for (const nextMove of validMovesWithDegrees) {
+    for (const nextMove of this.getValidMovesWithDegrees(x, y)) {
       if (
         this.solveNextStep(
-          nextMove.move[0],
-          nextMove.move[1],
+          nextMove[0],
+          nextMove[1],
           depth + 1,
           path,
           completeTour
         )
       ) {
-        console.log("next step is valid");
         return true;
       }
     }
@@ -99,21 +96,24 @@ class KnightTour {
     return false;
   }
 
+  //*returns array of objects [{[x,y], degree:n}] degree is the number of available moves from x,y.
+
   getValidMovesWithDegrees(x, y, ignoreStart = false) {
-    let validMoves = [];
-    for (const move of this.knightMoves) {
-      const nextX = x + move[0];
-      const nextY = y + move[1];
-      if (this.isValidMove(nextX, nextY, ignoreStart)) {
-        let moveDegree = this.getLocationDegrees(nextX, nextY);
-        validMoves.push({ moveDegree: moveDegree, move: [nextX, nextY] });
-      }
-    }
-    //now sort the array
-    validMoves.sort((a, b) => a.moveDegree - b.moveDegree);
-    return validMoves;
+    return this.getValidMoves(x, y, ignoreStart)
+      .map((move) => ({
+        move,
+        degree: this.getLocationDegrees(move[0], move[1]),
+      }))
+      .sort((a, b) => a.degree - b.degree)
+      .map(({ move }) => move);
   }
 
+  getValidMoves(x, y, ignoreStart = false) {
+    return this.knightMoves
+      .map((move) => [x + move[0], y + move[1]])
+      .filter(([nextX, nextY]) => this.isValidMove(nextX, nextY, ignoreStart));
+  }
+  //return the number of valid moves (degree) for the point x,y
   getLocationDegrees(x, y) {
     let moveDegree = 0;
     for (const move of this.knightMoves) {
