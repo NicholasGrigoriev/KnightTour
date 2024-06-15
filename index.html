@@ -9,6 +9,13 @@
 
   <body>
     <table id="chessboard"></table>
+    <label for="boardSize">Board Size:</label>
+    <input type="number" id="boardSize" value="5" min="3" max="10">
+    <button onclick="ChessboardRenderer.restart()">Restart</button>
+    <label for="completeTour">Complete Tour:</label>
+    <input type="checkbox" id="completeTour" checked>
+    <div id="iterations">Iterations: 0</div>
+</div>
     <script src="script.js"></script>
   </body>
 </html>
