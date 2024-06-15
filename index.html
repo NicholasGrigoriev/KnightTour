@@ -9,13 +9,17 @@
 
   <body>
     <table id="chessboard"></table>
-    <label for="boardSize">Board Size:</label>
-    <input type="number" id="boardSize" value="6" min="3" max="10">
+    <label for="boardWidth">Board Width:</label>
+    <input type="number" id="boardWidth" value="6" min="3" max="26">
+    <label for="boardHeight">Board Height:</label>
+    <input type="number" id="boardHeight" value="6" min="3" max="26">
     <button onclick="ChessboardRenderer.restart()">Restart</button>
     <label for="completeTour">Complete Tour:</label>
-    <input type="checkbox" id="completeTour" checked>
+    <input type="checkbox" id="completeTour" unchecked>
+
+    <label for="iterationsLimit">IterationsLimit:</label>
+    <input type="number" id="iterationsLimit" value="1000000" min="1" max="1000000000">
     <div id="iterations">Iterations: 0</div>
-</div>
     <script src="script.js"></script>
   </body>
 </html>

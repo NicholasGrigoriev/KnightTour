@@ -1,11 +1,11 @@
 class Chessboard {
-  constructor(size) {
-    this.size = size;
+  constructor(width, height) {
+    this.width = width;
+    this.height = height;
     this.chessBoardState = [];
-    this.startPoint = [];
-    for (let i = 0; i < size; i++) {
+    for (let i = 0; i < width; i++) {
       this.chessBoardState.push([]);
-      for (let j = 0; j < size; j++) {
+      for (let j = 0; j < height; j++) {
         this.chessBoardState[i].push(0);
       }
     }
@@ -14,8 +14,12 @@ class Chessboard {
 }
 
 class KnightTour {
-  constructor(chessboard) {
+  constructor(chessboard, startPoint, isCompleteTour, iterationsLimit) {
     this.chessboard = chessboard;
+    this.startPoint = startPoint;
+    this.iterationsLimit = iterationsLimit;
+    this.isCompleteTour = isCompleteTour;
+
     this.knightMoves = [
       [2, 1],
       [1, 2],
@@ -29,39 +33,35 @@ class KnightTour {
     this.iterations = 0;
   }
 
-  solveKnightTour(x, y, completeTour) {
-    console.log("solving for ", x, y);
-    this.startPoint = [x, y];
+  solveKnightTour() {
+    console.log("solvin Knight Tour for:", JSON.stringify(this, null, 2));
     const path = [];
-    this.iterations = 0; // Reset iteration counter
-    console.log("solveKnightTour");
-    try {
-      if (this.solveNextStep(x, y, 1, path, completeTour)) {
-        console.log("result path, ", path);
-        console.log("Total iterations: ", this.iterations);
-        document.getElementById(
-          "iterations"
-        ).textContent = `Iterations: ${this.iterations}`;
-        return path.map((move) => this.convertToChessNotation(move));
-      } else {
-        console.log("Total iterations: ", this.iterations);
-        document.getElementById(
-          "iterations"
-        ).textContent = `Iterations: ${this.iterations}`;
-        return false;
-      }
-    } catch (ex) {
-      console.log("error in solveKnightTour", ex);
+    if (this.solveNextStep(this.startPoint[0], this.startPoint[1], 1, path)) {
+      console.log("result path, ", path);
+      console.log("Total iterations: ", this.iterations);
+      document.getElementById(
+        "iterations"
+      ).textContent = `Iterations: ${this.iterations}`;
+      return path.map((move) => this.convertToChessNotation(move));
+    } else {
+      console.log("Total iterations: ", this.iterations);
+      document.getElementById(
+        "iterations"
+      ).textContent = `Iterations: ${this.iterations}`;
+      return false;
     }
   }
 
-  solveNextStep(x, y, depth, path, completeTour) {
+  solveNextStep(x, y, depth, path) {
     this.iterations++;
+    if (this.iterations >= this.iterationsLimit) {
+      throw new Error("Stopped due to iteration limit");
+    }
     this.chessboard.chessBoardState[x][y] = depth;
     path.push([x, y]);
     // we walked over all the cells
-    if (depth === this.chessboard.size * this.chessboard.size) {
-      if (completeTour) {
+    if (depth === this.chessboard.width * this.chessboard.height) {
+      if (this.isCompleteTour) {
         // Check if the starting point is a valid move from the current position
         for (const move of this.getValidMovesWithDegrees(x, y, true)) {
           if (
@@ -79,15 +79,7 @@ class KnightTour {
     }
 
     for (const nextMove of this.getValidMovesWithDegrees(x, y)) {
-      if (
-        this.solveNextStep(
-          nextMove[0],
-          nextMove[1],
-          depth + 1,
-          path,
-          completeTour
-        )
-      ) {
+      if (this.solveNextStep(nextMove[0], nextMove[1], depth + 1, path)) {
         return true;
       }
     }
@@ -129,61 +121,76 @@ class KnightTour {
   isValidMove(x, y, ignoreStart = false) {
     return (
       0 <= x &&
-      x < this.chessboard.size &&
+      x < this.chessboard.width &&
       0 <= y &&
-      y < this.chessboard.size &&
+      y < this.chessboard.height &&
       (ignoreStart || this.chessboard.chessBoardState[x][y] === 0)
     );
   }
 
   convertToChessNotation([x, y]) {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    return `${letters[x]}${this.chessboard.size - y}`;
+    return `${letters[x]}${this.chessboard.height - y}`;
   }
 }
 
-// --- CODING SECTION END ---
-
 class ChessboardRenderer {
-  static CHESSBOARD_SIZE = 8;
+  static CHESSBOARD_WIDTH;
+  static CHESSBOARD_HEIGHT;
+  static ITERATIONS_LIMIT;
+  static IS_COMPLETE_TOUR;
+
   static render() {
     const chessboardElement = document.getElementById("chessboard");
     chessboardElement.innerHTML = "";
 
-    const size = parseInt(document.getElementById("boardSize").value);
-    ChessboardRenderer.CHESSBOARD_SIZE = size;
+    ChessboardRenderer.CHESSBOARD_WIDTH = parseInt(
+      document.getElementById("boardWidth").value
+    );
+    ChessboardRenderer.CHESSBOARD_HEIGHT = parseInt(
+      document.getElementById("boardHeight").value
+    );
+    ChessboardRenderer.ITERATIONS_LIMIT = parseInt(
+      document.getElementById("iterationsLimit").value
+    );
+    ChessboardRenderer.IS_COMPLETE_TOUR =
+      document.getElementById("completeTour").checked;
 
     const colLabelRowTop = document.createElement("tr");
     colLabelRowTop.innerHTML = '<td class="column-label"></td>';
-    for (let x = 0; x < size; x++) {
+    for (let x = 0; x < ChessboardRenderer.CHESSBOARD_WIDTH; x++) {
       const colLabelCell = document.createElement("td");
       colLabelCell.textContent = String.fromCharCode(65 + x);
       colLabelRowTop.appendChild(colLabelCell);
     }
     chessboardElement.appendChild(colLabelRowTop);
 
-    for (let y = 0; y < size; y++) {
+    for (let y = 0; y < ChessboardRenderer.CHESSBOARD_HEIGHT; y++) {
       const row = document.createElement("tr");
       const numberLabelCellLeft = document.createElement("td");
       numberLabelCellLeft.className = "row-label";
-      numberLabelCellLeft.textContent = size - y;
+      numberLabelCellLeft.textContent =
+        ChessboardRenderer.CHESSBOARD_HEIGHT - y;
       row.appendChild(numberLabelCellLeft);
-      for (let x = 0; x < size; x++) {
+      for (let x = 0; x < ChessboardRenderer.CHESSBOARD_WIDTH; x++) {
         const cell = document.createElement("td");
-        cell.id = `${String.fromCharCode(65 + x)}${size - y}`;
+        cell.id = `${String.fromCharCode(65 + x)}${
+          ChessboardRenderer.CHESSBOARD_HEIGHT - y
+        }`;
         cell.className = (y + x) % 2 === 0 ? "light" : "dark";
         cell.addEventListener("click", () => this.onCellClick(x, y));
         row.appendChild(cell);
       }
       const numberLabelCellRight = document.createElement("td");
       numberLabelCellRight.className = "row-label";
-      numberLabelCellRight.textContent = size - y;
+      numberLabelCellRight.textContent =
+        ChessboardRenderer.CHESSBOARD_HEIGHT - y;
       row.appendChild(numberLabelCellRight);
       chessboardElement.appendChild(row);
     }
     const colLabelRowBottom = document.createElement("tr");
     colLabelRowBottom.innerHTML = '<td class="column-label"></td>';
-    for (let x = 0; x < size; x++) {
+    for (let x = 0; x < ChessboardRenderer.CHESSBOARD_WIDTH; x++) {
       const colLabelCell = document.createElement("td");
       colLabelCell.textContent = String.fromCharCode(65 + x);
       colLabelRowBottom.appendChild(colLabelCell);
@@ -193,11 +200,22 @@ class ChessboardRenderer {
 
   static onCellClick(x, y) {
     ChessboardRenderer.render();
-    const chessboard = new Chessboard(ChessboardRenderer.CHESSBOARD_SIZE);
-    const knightTour = new KnightTour(chessboard);
-    const completeTour = document.getElementById("completeTour").checked;
+    const chessboard = new Chessboard(
+      ChessboardRenderer.CHESSBOARD_WIDTH,
+      ChessboardRenderer.CHESSBOARD_HEIGHT
+    );
+    console.log(
+      "before calling, ChessboardRenderer.IS_COMPLETE_TOUR",
+      ChessboardRenderer.IS_COMPLETE_TOUR
+    );
+    const knightTour = new KnightTour(
+      chessboard,
+      [x, y],
+      ChessboardRenderer.IS_COMPLETE_TOUR,
+      ChessboardRenderer.ITERATIONS_LIMIT
+    );
     new Promise((resolve, reject) => {
-      const result = knightTour.solveKnightTour(x, y, completeTour);
+      const result = knightTour.solveKnightTour();
       return result ? resolve(result) : reject();
     })
       .then((result) => {
@@ -213,8 +231,8 @@ class ChessboardRenderer {
                 255,
                 Math.floor(
                   (depth /
-                    (ChessboardRenderer.CHESSBOARD_SIZE *
-                      ChessboardRenderer.CHESSBOARD_SIZE)) *
+                    (ChessboardRenderer.CHESSBOARD_WIDTH *
+                      ChessboardRenderer.CHESSBOARD_HEIGHT)) *
                     255
                 )
               );
@@ -227,7 +245,7 @@ class ChessboardRenderer {
         }
         const row = document.createElement("tr");
         const resultElement = document.createElement("td");
-        resultElement.colSpan = ChessboardRenderer.CHESSBOARD_SIZE + 2;
+        resultElement.colSpan = ChessboardRenderer.CHESSBOARD_WIDTH + 2;
         resultElement.textContent =
           result instanceof Array
             ? result.map((key, idx) => `${idx + 1}. ${key}`).join("; ")
@@ -240,8 +258,10 @@ class ChessboardRenderer {
         const chessboardElement = document.getElementById("chessboard");
         const row = document.createElement("tr");
         const resultElement = document.createElement("td");
-        resultElement.colSpan = ChessboardRenderer.CHESSBOARD_SIZE + 2;
-        resultElement.textContent = error ? error : `Not completed`;
+        resultElement.colSpan = ChessboardRenderer.CHESSBOARD_WIDTH + 2;
+        resultElement.textContent = error.message
+          ? error.message
+          : `Not completed`;
         row.appendChild(resultElement);
         chessboardElement.appendChild(row);
       });
