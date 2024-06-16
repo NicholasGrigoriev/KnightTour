@@ -35,21 +35,31 @@ class KnightTour {
 
   solveKnightTour() {
     console.log("solvin Knight Tour for:", JSON.stringify(this, null, 2));
+    //check
+    if (this.checkKnownLimit()) {
+      {
+        return false;
+      }
+    }
     const path = [];
     if (this.solveNextStep(this.startPoint[0], this.startPoint[1], 1, path)) {
       console.log("result path, ", path);
       console.log("Total iterations: ", this.iterations);
-      document.getElementById(
-        "iterations"
-      ).textContent = `Iterations: ${this.iterations}`;
       return path.map((move) => this.convertToChessNotation(move));
     } else {
       console.log("Total iterations: ", this.iterations);
-      document.getElementById(
-        "iterations"
-      ).textContent = `Iterations: ${this.iterations}`;
       return false;
     }
+  }
+  checkKnownOddLimit() {
+    if (
+      this.chessboard.width === this.chessboard.height &&
+      this.chessboard.width % 2 !== 0
+    ) {
+      const [x, y] = this.startPoint;
+      return (x + y) % 2 !== 0;
+    }
+    return false;
   }
 
   solveNextStep(x, y, depth, path) {
@@ -243,6 +253,9 @@ class ChessboardRenderer {
             }
           });
         }
+        document.getElementById(
+          "iterations"
+        ).textContent = `Iterations: ${knightTour.iterations}`;
         const row = document.createElement("tr");
         const resultElement = document.createElement("td");
         resultElement.colSpan = ChessboardRenderer.CHESSBOARD_WIDTH + 2;
@@ -259,7 +272,7 @@ class ChessboardRenderer {
         const row = document.createElement("tr");
         const resultElement = document.createElement("td");
         resultElement.colSpan = ChessboardRenderer.CHESSBOARD_WIDTH + 2;
-        resultElement.textContent = error.message
+        resultElement.textContent = error?.message
           ? error.message
           : `Not completed`;
         row.appendChild(resultElement);
