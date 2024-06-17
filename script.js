@@ -9,16 +9,22 @@ class Chessboard {
         this.chessBoardState[i].push(0);
       }
     }
-    console.log("initiated chessboard: ", this.chessBoardState);
   }
 }
 
 class KnightTour {
-  constructor(chessboard, startPoint, isCompleteTour, iterationsLimit) {
+  constructor(
+    chessboard,
+    startPoint,
+    isCompleteTour,
+    iterationsLimit,
+    iFeelLucky
+  ) {
     this.chessboard = chessboard;
     this.startPoint = startPoint;
     this.iterationsLimit = iterationsLimit;
     this.isCompleteTour = isCompleteTour;
+    this.iFeelLucky = iFeelLucky;
 
     this.knightMoves = [
       [2, 1],
@@ -34,19 +40,29 @@ class KnightTour {
   }
 
   solveKnightTour() {
-    console.log("solvin Knight Tour for:", JSON.stringify(this, null, 2));
-    //check
-    if (this.checkKnownLimit()) {
+    const startTime = new Date();
+    if (this.checkKnownOddLimit()) {
       {
         return false;
       }
     }
     const path = [];
-    if (this.solveNextStep(this.startPoint[0], this.startPoint[1], 1, path)) {
+
+    const result = this.solveNextStep(
+      this.startPoint[0],
+      this.startPoint[1],
+      1,
+      path
+    );
+    const endTime = new Date();
+    const executionTime = endTime - startTime;
+    if (result) {
       console.log("result path, ", path);
       console.log("Total iterations: ", this.iterations);
+      console.log(`Execution time: ${executionTime} ms`);
       return path.map((move) => this.convertToChessNotation(move));
     } else {
+      console.log(`Execution time: ${executionTime} ms`);
       console.log("Total iterations: ", this.iterations);
       return false;
     }
@@ -78,12 +94,10 @@ class KnightTour {
             move[0] === this.startPoint[0] &&
             move[1] === this.startPoint[1]
           ) {
-            console.log("we are done at ", depth);
             return true;
           }
         }
       } else {
-        console.log("we are done at ", depth);
         return true;
       }
     }
@@ -101,19 +115,49 @@ class KnightTour {
   //*returns array of objects [{[x,y], degree:n}] degree is the number of available moves from x,y.
 
   getValidMovesWithDegrees(x, y, ignoreStart = false) {
-    return this.getValidMoves(x, y, ignoreStart)
-      .map((move) => ({
-        move,
-        degree: this.getLocationDegrees(move[0], move[1]),
-      }))
-      .sort((a, b) => a.degree - b.degree)
+    const moves = this.getValidMoves(x, y, ignoreStart).map((move) => ({
+      move,
+      degree: this.getLocationDegrees(move[0], move[1]),
+      distanceFromCenter: this.getDistanceFromCenter(move[0], move[1]),
+    }));
+
+    if (this.iFeelLucky) {
+      const uniqueRandomValues = this.generateUniqueRandomValues(
+        moves.length,
+        0,
+        10
+      );
+      moves.forEach((move, index) => {
+        move.tiebreak = uniqueRandomValues[index];
+      });
+    } else {
+      moves.forEach((move) => {
+        move.tiebreak = move.distanceFromCenter;
+      });
+    }
+    return moves
+      .sort((a, b) => a.degree - b.degree || b.tiebreak - a.tiebreak)
       .map(({ move }) => move);
+  }
+
+  generateUniqueRandomValues(count, min, max) {
+    const uniqueValues = new Set();
+    while (uniqueValues.size < count) {
+      uniqueValues.add(Math.floor(Math.random() * (max - min + 1)) + min);
+    }
+    return Array.from(uniqueValues);
   }
 
   getValidMoves(x, y, ignoreStart = false) {
     return this.knightMoves
       .map((move) => [x + move[0], y + move[1]])
       .filter(([nextX, nextY]) => this.isValidMove(nextX, nextY, ignoreStart));
+  }
+
+  getDistanceFromCenter(x, y) {
+    const centerX = (this.chessboard.width - 1) / 2;
+    const centerY = (this.chessboard.height - 1) / 2;
+    return Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
   }
   //return the number of valid moves (degree) for the point x,y
   getLocationDegrees(x, y) {
@@ -139,8 +183,7 @@ class KnightTour {
   }
 
   convertToChessNotation([x, y]) {
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    return `${letters[x]}${this.chessboard.height - y}`;
+    return `${String.fromCharCode(65 + x)}${this.chessboard.height - y}`;
   }
 }
 
@@ -165,6 +208,8 @@ class ChessboardRenderer {
     );
     ChessboardRenderer.IS_COMPLETE_TOUR =
       document.getElementById("completeTour").checked;
+    ChessboardRenderer.IS_I_FEEL_LUCKY =
+      document.getElementById("ifeelLucky").checked;
 
     const colLabelRowTop = document.createElement("tr");
     colLabelRowTop.innerHTML = '<td class="column-label"></td>';
@@ -189,6 +234,10 @@ class ChessboardRenderer {
         }`;
         cell.className = (y + x) % 2 === 0 ? "light" : "dark";
         cell.addEventListener("click", () => this.onCellClick(x, y));
+        cell.addEventListener("mouseover", (e) =>
+          this.onCellMouseOver(e, cell, x, y)
+        );
+        cell.addEventListener("mouseout", () => this.onCellMouseOut(cell));
         row.appendChild(cell);
       }
       const numberLabelCellRight = document.createElement("td");
@@ -214,15 +263,12 @@ class ChessboardRenderer {
       ChessboardRenderer.CHESSBOARD_WIDTH,
       ChessboardRenderer.CHESSBOARD_HEIGHT
     );
-    console.log(
-      "before calling, ChessboardRenderer.IS_COMPLETE_TOUR",
-      ChessboardRenderer.IS_COMPLETE_TOUR
-    );
     const knightTour = new KnightTour(
       chessboard,
       [x, y],
       ChessboardRenderer.IS_COMPLETE_TOUR,
-      ChessboardRenderer.ITERATIONS_LIMIT
+      ChessboardRenderer.ITERATIONS_LIMIT,
+      ChessboardRenderer.IS_I_FEEL_LUCKY
     );
     new Promise((resolve, reject) => {
       const result = knightTour.solveKnightTour();
@@ -269,6 +315,9 @@ class ChessboardRenderer {
       .catch((error) => {
         console.log("error in solving: ", error);
         const chessboardElement = document.getElementById("chessboard");
+        document.getElementById(
+          "iterations"
+        ).textContent = `Iterations: ${knightTour.iterations}`;
         const row = document.createElement("tr");
         const resultElement = document.createElement("td");
         resultElement.colSpan = ChessboardRenderer.CHESSBOARD_WIDTH + 2;
@@ -280,10 +329,40 @@ class ChessboardRenderer {
       });
   }
 
+  static onCellMouseOver(event, cell, x, y) {
+    this.removeTooltip(); // Remove any existing tooltip
+    cell.style.outline = "2px solid red";
+    const tooltip = document.createElement("div");
+    tooltip.id = "tooltip";
+    tooltip.style.position = "absolute";
+    tooltip.style.backgroundColor = "#fff";
+    tooltip.style.border = "1px solid #ccc";
+    tooltip.style.padding = "5px";
+    tooltip.style.pointerEvents = "none";
+    tooltip.textContent = `${String.fromCharCode(65 + x)}${
+      ChessboardRenderer.CHESSBOARD_HEIGHT - y
+    }`;
+    document.body.appendChild(tooltip);
+    const cellRect = cell.getBoundingClientRect();
+    tooltip.style.left = `${cellRect.right + window.scrollX + 10}px`;
+    tooltip.style.top = `${cellRect.top + window.scrollY}px`;
+  }
+
+  static onCellMouseOut(cell) {
+    cell.style.outline = "";
+    this.removeTooltip();
+  }
+
+  static removeTooltip() {
+    const tooltip = document.getElementById("tooltip");
+    if (tooltip) {
+      tooltip.remove();
+    }
+  }
+
   static restart() {
     ChessboardRenderer.render();
     document.getElementById("iterations").textContent = "Iterations: 0";
   }
 }
-
 ChessboardRenderer.render();
