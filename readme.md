@@ -21,3 +21,7 @@ n×n dimensions.
 # Getting Started
 
 To view and run the Knight's Tour problem, simply open the index.html file in your web browser. This will load the application and allow you to interact with the Knight's Tour visualizations.
+
+## Example for open tour on 40x40 board
+
+![alt text](image.png)
