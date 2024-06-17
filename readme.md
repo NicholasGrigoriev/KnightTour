@@ -11,12 +11,7 @@ Closed Tour: The knight visits every square exactly once and ends on the startin
 Warnsdorf's Rule: A heuristic to reduce the number of decisions
 the knight has to make by always moving to the square with the fewest onward moves.
 
-# Dynamic Board Dimensions: The size of the chessboard can be adjusted to any
-
-𝑛
-×
-𝑛
-n×n dimensions.
+Dynamic Board Dimensions: The size of the chessboard can be adjusted to any n×m dimensions.
 
 # Getting Started
 
